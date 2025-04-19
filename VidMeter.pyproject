@@ -1,0 +1,7 @@
+{
+    "files": [
+        "mainwindow.py",
+        "mainwindow.ui",
+        "video_worker.py"
+    ]
+}
