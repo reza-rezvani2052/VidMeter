@@ -93,3 +93,9 @@ __pycache__/
 
 *.lnk
 ui_*.py
+
+*.user
+*.pyproject.user
+VidMeter.pyproject.user
+VidMeter.pyproject.user
+VidMeter.pyproject.user
