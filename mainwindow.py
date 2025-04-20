@@ -32,15 +32,20 @@ class MainWindow(QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
-        self.ui.progressBar.setVisible(False)
-        self.ui.btnCancelProcess.setVisible(False)
+        self.remaining_files = []  # فایلهای پردازش نشده
+        self.results = []
+
+        self.set_process_widgets_enable()
 
         # اتصال دکمه ها
         self.ui.btnSelectPath.clicked.connect(self.select_path)
         self.ui.btnSelectFiles.clicked.connect(self.select_files)
         self.ui.btnSaveToFile.clicked.connect(self.save_to_file)
         self.ui.btnChart.clicked.connect(self.show_chart)
+
+        self.ui.btnPauseProcess.clicked.connect(self.pause_worker)
         self.ui.btnCancelProcess.clicked.connect(self.cancel_worker)
+        self.ui.btnResumeProcess.clicked.connect(self.resume_worker)
 
         self.worker = None
 
@@ -63,7 +68,7 @@ class MainWindow(QMainWindow):
         file_list = self.get_video_files(path, include_subfolders)
 
         # بررسی وجود فایل ویدئویی در پوشه انتخاب شده
-        if file_list :
+        if file_list:
             self.start_worker(file_list)
 
     # .......................................................................................
@@ -94,9 +99,39 @@ class MainWindow(QMainWindow):
 
     # .......................................................................................
 
+    def set_process_widgets_enable(self, btn_cancel_process=False, btn_pause_process=False,
+                                   btn_resume_process=False, progressbar=False):
+        self.ui.btnCancelProcess.setVisible(btn_cancel_process)
+        self.ui.btnPauseProcess.setVisible(btn_pause_process)
+        self.ui.btnResumeProcess.setVisible(btn_resume_process)
+        self.ui.progressBar.setVisible(progressbar)
+
+    # .......................................................................................
+
+    def pause_worker(self):
+        if self.worker and self.worker.isRunning():
+            self.worker.stop()
+
+            # محاسبه فایل‌های باقی‌مانده
+            self.remaining_files = self.worker.files[self.worker.current_index:]
+
+            self.set_process_widgets_enable(btn_cancel_process=True, btn_pause_process=False,
+                                            btn_resume_process=True, progressbar=True)
+
+    def resume_worker(self):
+        if self.remaining_files:
+            self.start_worker(self.remaining_files)
+            self.remaining_files = []
+
+            self.set_process_widgets_enable(btn_cancel_process=True, btn_pause_process=True,
+                                            btn_resume_process=False, progressbar=True)
+
     def cancel_worker(self):
         if self.worker and self.worker.isRunning():
             self.worker.stop()
+            self.remaining_files = []
+            # ...
+            self.set_process_widgets_enable(False)
 
     # .......................................................................................
 
@@ -153,14 +188,14 @@ class MainWindow(QMainWindow):
 
     # .......................................................................................
 
+    # FIXME: [***] on resume, its not work well
     def start_worker(self, file_list):
-
         self.set_buttons_enable(False)
+        self.set_process_widgets_enable(btn_cancel_process=True, btn_pause_process=True,
+                                        btn_resume_process=False, progressbar=True)
 
         self.ui.tableFiles.setRowCount(0)
 
-        self.ui.progressBar.setVisible(True)
-        self.ui.btnCancelProcess.setVisible(True)
         self.ui.progressBar.setValue(0)
         self.ui.progressBar.setMaximum(len(file_list))
 
@@ -187,14 +222,15 @@ class MainWindow(QMainWindow):
 
         self.ui.tableFiles.resizeColumnsToContents()
 
-        self.ui.progressBar.setVisible(False)
-        self.ui.btnCancelProcess.setVisible(False)
+        # FIXME: ???
+        # self.set_process_widgets_enable()
+        # self.remaining_files = self.worker.files[self.worker.current_index:]
 
         self.set_buttons_enable()
 
     # .......................................................................................
 
-    #TODO:
+    # TODO:
     def show_error_message(self, err_message):
         pass
 
@@ -210,6 +246,7 @@ class MainWindow(QMainWindow):
     # .......................................................................................
 
     def get_video_duration(self, file_path):
+        clip = None
         try:
             # خط زیر در کنسول اطلاعات را چاپ میکند!
             clip = VideoFileClip(file_path, )
@@ -218,6 +255,9 @@ class MainWindow(QMainWindow):
             clip.close()
             return duration
         except Exception as e:
+            if clip:
+                clip.close()
+
             QMessageBox.critical(self, "Error", f"Failed to process: {file_path}\n{str(e)}")
             return 0
 
@@ -241,6 +281,10 @@ class MainWindow(QMainWindow):
     # .......................................................................................
 
     def save_to_file(self):
+        if self.ui.tableFiles.rowCount() <= 0:
+            QMessageBox.warning(self, "Err", "Table is empty!")
+            return
+
         path, _ = QFileDialog.getSaveFileName(self, "Save File", "", "Text File (*.txt);;CSV File (*.csv)")
         if not path:
             return
