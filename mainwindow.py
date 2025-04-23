@@ -6,8 +6,10 @@ import sys
 from ui_mainwindow import Ui_MainWindow
 
 from PySide6.QtWidgets import (
-    QApplication, QMainWindow, QFileDialog, QTableWidgetItem
+    QApplication, QMainWindow, QFileDialog, QTableWidgetItem, QMenu, QMessageBox
 )
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QKeyEvent
 
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
@@ -28,6 +30,10 @@ class MainWindow(QMainWindow):
         super().__init__(parent)
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
+
+        self.ui.tableFiles.installEventFilter(self)
+        self.ui.tableFiles.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.ui.tableFiles.customContextMenuRequested.connect(self.show_table_context_menu)
 
         # دکمه‌ها در شروع مخفی باشند
         self.ui.progressBar.setVisible(False)
@@ -51,6 +57,14 @@ class MainWindow(QMainWindow):
         if os.path.exists(font_path):
             rcParams['font.family'] = 'Vazir'
             plt.rcParams['font.family'] = 'Vazir'
+
+    def eventFilter(self, source, event):
+        if source == self.ui.tableFiles and isinstance(event, QKeyEvent):
+            if event.key() == Qt.Key_Delete:
+                self.delete_selected_rows()
+                return True  # رویداد پردازش شد
+
+        return super().eventFilter(source, event)
 
     def select_path(self):
         path = QFileDialog.getExistingDirectory(self, "Select Folder")
@@ -156,8 +170,8 @@ class MainWindow(QMainWindow):
             self.worker.cancel()
 
     def worker_finished(self):
-        self.set_buttons_enable(True)   #TODO: ***
-        #...
+        self.set_buttons_enable(True)  # TODO: ***
+        # ...
         # مخفی‌سازی دکمه‌ها و نوار پیشرفت
         self.ui.progressBar.setVisible(False)
         self.ui.btnPauseResume.setVisible(False)
@@ -202,12 +216,99 @@ class MainWindow(QMainWindow):
 
         self.ui.statusbar.showMessage(f"مجموع مدت‌زمان همه ویدیوها: {total_text}")
 
+    def show_table_context_menu(self, position):
+        indexes = self.ui.tableFiles.selectedIndexes()
+        if not indexes:
+            return
+
+        selected_rows = set(index.row() for index in indexes)
+
+        menu = QMenu()
+
+        delete_action = menu.addAction("🗑 حذف سطر(ها)")
+        copy_action = menu.addAction("📋 کپی به کلیپ‌بورد")
+        save_action = menu.addAction("💾 ذخیره انتخاب‌شده‌ها به فایل")
+
+        # فقط در صورتی که فقط یک سطر انتخاب شده باشد
+        if len(selected_rows) == 1:
+            detail_action = menu.addAction("ℹ نمایش جزئیات ویدیو")
+        else:
+            detail_action = None
+
+        action = menu.exec(self.ui.tableFiles.viewport().mapToGlobal(position))
+
+        if action == delete_action:
+            self.delete_selected_rows()
+        elif action == copy_action:
+            self.copy_selected_to_clipboard()
+        elif action == save_action:
+            self.save_selected_to_file()
+        elif detail_action and action == detail_action:
+            self.show_video_details()
 
     @staticmethod
     def format_duration(seconds):
         mins, secs = divmod(int(seconds), 60)
         hours, mins = divmod(mins, 60)
         return f"{hours:02}:{mins:02}:{secs:02}"
+
+    def delete_selected_rows(self):
+        selected_rows = set()
+        for item in self.ui.tableFiles.selectedItems():
+            selected_rows.add(item.row())
+
+        for row in sorted(selected_rows, reverse=True):
+            self.ui.tableFiles.removeRow(row)
+
+        # برای به‌روزرسانی وضعیت نوار وضعیت
+        self.update_selected_duration()  # اگر جمع انتخاب‌شده رو نشون میدی
+
+    def copy_selected_to_clipboard(self):
+        selected = self.ui.tableFiles.selectedItems()
+        if not selected:
+            return
+
+        rows = set(item.row() for item in selected)
+        text = ""
+
+        for row in sorted(rows):
+            name = self.ui.tableFiles.item(row, 0).text()
+            duration = self.ui.tableFiles.item(row, 1).text()
+            text += f"{name}, {duration}\n"
+
+        QApplication.clipboard().setText(text.strip())
+
+    def save_selected_to_file(self):
+        path, _ = QFileDialog.getSaveFileName(self, "Save Selected", "", "Text File (*.txt);;CSV File (*.csv)")
+        if not path:
+            return
+
+        selected = self.ui.tableFiles.selectedItems()
+        if not selected:
+            return
+
+        rows = set(item.row() for item in selected)
+
+        with open(path, 'w', encoding='utf-8') as f:
+            for row in sorted(rows):
+                name = self.ui.tableFiles.item(row, 0).text()
+                duration = self.ui.tableFiles.item(row, 1).text()
+                f.write(f"{name}, {duration}\n")
+
+    def show_video_details(self):
+        selected = self.ui.tableFiles.selectedItems()
+        if not selected:
+            return
+
+        row = selected[0].row()
+        filename = self.ui.tableFiles.item(row, 0).text()
+        duration = self.ui.tableFiles.item(row, 1).text()
+
+        QMessageBox.information(
+            self,
+            "جزئیات ویدیو",
+            f"🖹 نام فایل: {filename}\n⏱ مدت زمان: {duration}"
+        )
 
     def save_to_file(self):
         path, _ = QFileDialog.getSaveFileName(self, "Save File", "", "Text File (*.txt);;CSV File (*.csv)")

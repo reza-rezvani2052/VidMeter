@@ -96,4 +96,4 @@ ui_*.py
 
 *.user
 *.pyproject.user
-VidMeter.pyproject.user
+*.pyproject.user.*

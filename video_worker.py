@@ -24,21 +24,21 @@ class VideoWorker(QThread):
         self._wait_condition = QWaitCondition()
 
     # ...
-
-    # def get_video_duration_ffmpeg(path):
-    #     try:
-    #         probe = ffmpeg.probe(path)
-    #         duration = float(probe['format']['duration'])
-    #         return duration
-    #     except Exception as e:
-    #         print(f"ffprobe error for {path}: {e}")
-    #         return 0
-
+    """
+    def get_video_duration_ffmpeg(path):
+        try:
+            probe = ffmpeg.probe(path)
+            duration = float(probe['format']['duration'])
+            return duration
+        except Exception as e:
+            print(f"ffprobe error for {path}: {e}")
+            return 0
+    """
     # ...
 
     def run(self):
         results = []
-        total = len(self.files)
+        # total = len(self.files)
 
         for i, file in enumerate(self.files, 1):
             # بررسی وضعیت pause
@@ -58,6 +58,7 @@ class VideoWorker(QThread):
 
                 results.append((os.path.basename(file), duration))
             except Exception as e:
+                self.error.emit(os.path.basename(file))
                 results.append((os.path.basename(file), 0))
 
             self.progress.emit(i)
