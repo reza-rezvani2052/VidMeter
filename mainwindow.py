@@ -42,6 +42,8 @@ class MainWindow(QMainWindow):
         self.ui.btnPauseResume.clicked.connect(self.toggle_pause_resume)
         self.ui.btnCancelProcess.clicked.connect(self.cancel_process)
 
+        self.ui.tableFiles.itemSelectionChanged.connect(self.update_selected_duration)
+
         self.worker = None
         self.is_paused = False
 
@@ -161,6 +163,28 @@ class MainWindow(QMainWindow):
         self.ui.btnPauseResume.setVisible(False)
         self.ui.btnCancelProcess.setVisible(False)
 
+    def calculate_total_duration(self):
+        total_seconds = 0
+        for row in range(self.ui.tableFiles.rowCount()):
+            duration_text = self.ui.tableFiles.item(row, 1).text()
+            h, m, s = map(int, duration_text.split(':'))
+            total_seconds += h * 3600 + m * 60 + s
+        return total_seconds
+
+    def update_selected_duration(self):
+        selected_ranges = self.ui.tableFiles.selectedRanges()
+        total_seconds = 0
+
+        for r in selected_ranges:
+            for row in range(r.topRow(), r.bottomRow() + 1):
+                item = self.ui.tableFiles.item(row, 1)  # ستون 1 = Duration
+                if item:
+                    h, m, s = map(int, item.text().split(':'))
+                    total_seconds += h * 3600 + m * 60 + s
+
+        total_text = self.format_duration(total_seconds)
+        self.ui.statusbar.showMessage(f"مدت‌زمان انتخاب‌شده: {total_text}")
+
     def populate_table(self, results):
         self.results = results
         self.ui.tableFiles.setRowCount(len(results))
@@ -173,7 +197,14 @@ class MainWindow(QMainWindow):
 
         self.ui.tableFiles.resizeColumnsToContents()
 
-    def format_duration(self, seconds):
+        total_duration = self.calculate_total_duration()
+        total_text = self.format_duration(total_duration)
+
+        self.ui.statusbar.showMessage(f"مجموع مدت‌زمان همه ویدیوها: {total_text}")
+
+
+    @staticmethod
+    def format_duration(seconds):
         mins, secs = divmod(int(seconds), 60)
         hours, mins = divmod(mins, 60)
         return f"{hours:02}:{mins:02}:{secs:02}"
