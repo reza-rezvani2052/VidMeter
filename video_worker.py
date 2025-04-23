@@ -1,9 +1,10 @@
 # video_worker.py
-from PySide6.QtCore import QThread, Signal
 import os
+from PySide6.QtCore import QThread, Signal, QMutex, QWaitCondition
 
 # import ffmpeg
 from moviepy import VideoFileClip
+# from moviepy.editor import VideoFileClip          # ERROR
 
 
 class VideoWorker(QThread):
@@ -12,11 +13,15 @@ class VideoWorker(QThread):
     finished = Signal()  # پایان کامل کار
     error = Signal(str)
 
+
     def __init__(self, files):
         super().__init__()
         self.files = files
-        self._is_running = True
-        self.current_index = 0  # برای نگه داشتن موقعیت فعلی، جهت توقف و ادامه پردازش
+        self._is_paused = False
+        self._is_cancelled = False
+
+        self._mutex = QMutex()
+        self._wait_condition = QWaitCondition()
 
     # ...
 
@@ -31,58 +36,49 @@ class VideoWorker(QThread):
 
     # ...
 
-    def stop(self):
-        self._is_running = False
-
     def run(self):
         results = []
         total = len(self.files)
 
-        for i in range(self.current_index, total):
-            # for i, file in enumerate(self.files, 1):
-            if not self._is_running:
-                self.current_index = i  # ذخیره جایی که متوقف شدیم
+        for i, file in enumerate(self.files, 1):
+            # بررسی وضعیت pause
+            self._mutex.lock()
+            while self._is_paused:
+                self._wait_condition.wait(self._mutex)
+            self._mutex.unlock()
+
+            # بررسی وضعیت cancel
+            if self._is_cancelled:
                 break
 
-            # ...
-
-            # try:
-            #     clip = VideoFileClip(file)
-            #     duration = clip.duration
-            #     clip.close()
-            #     # duration = self.get_video_duration_ffmpeg(file)
-            #
-            #     results.append((os.path.basename(file), duration))
-            # except Exception as e:
-            #     self.error.emit(f"Error in '{file}': {str(e)}")
-            #     results.append((os.path.basename(file), 0))
-
-            file = self.files[i]
-
-            clip = None
-            duration = 0
             try:
                 clip = VideoFileClip(file)
                 duration = clip.duration
-                # duration = self.get_video_duration_ffmpeg(file)
+                clip.close()
 
-            except Exception as e:
-                duration = 0
-                self.error.emit(f"Error in '{file}': {str(e)}")
-            finally:
                 results.append((os.path.basename(file), duration))
+            except Exception as e:
+                results.append((os.path.basename(file), 0))
 
-                if clip:
-                    clip.close()
-
-            # self.progress.emit(i)
-            self.progress.emit(i + 1)
-
-        # ...
+            self.progress.emit(i)
 
         self.result.emit(results)
+        self.finished.emit()
 
-        # self.finished.emit()
-        if self._is_running:
-            self.current_index = total  # اگر به انتها رسیدیم، ریست کن
-            self.finished.emit()
+    def pause(self):
+        self._mutex.lock()
+        self._is_paused = True
+        self._mutex.unlock()
+
+    def resume(self):
+        self._mutex.lock()
+        self._is_paused = False
+        self._mutex.unlock()
+        self._wait_condition.wakeAll()
+
+    def cancel(self):
+        self._mutex.lock()
+        self._is_cancelled = True
+        self._is_paused = False  # برای اینکه اگر Pause بود، از wait خارج بشه
+        self._mutex.unlock()
+        self._wait_condition.wakeAll()

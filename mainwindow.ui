@@ -60,23 +60,7 @@
          </widget>
         </item>
         <item>
-         <widget class="QToolButton" name="btnResumeProcess">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Fixed" vsizetype="Minimum">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="toolTip">
-           <string>ادامه</string>
-          </property>
-          <property name="text">
-           <string>▶️</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QToolButton" name="btnPauseProcess">
+         <widget class="QToolButton" name="btnPauseResume">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Fixed" vsizetype="Minimum">
             <horstretch>0</horstretch>
@@ -143,7 +127,7 @@
     <item row="2" column="0">
      <layout class="QHBoxLayout" name="horizontalLayout_2">
       <item>
-       <widget class="QCheckBox" name="chkSubfolders">
+       <widget class="QCheckBox" name="chkSubfolder">
         <property name="text">
          <string>Subfolders</string>
         </property>
@@ -189,7 +173,7 @@
      <x>0</x>
      <y>0</y>
      <width>578</width>
-     <height>25</height>
+     <height>21</height>
     </rect>
    </property>
   </widget>
