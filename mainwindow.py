@@ -5,15 +5,20 @@ import sys
 
 from ui_mainwindow import Ui_MainWindow
 
+from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
+from PySide6.QtMultimediaWidgets import QVideoWidget
 from PySide6.QtWidgets import (
-    QApplication, QMainWindow, QFileDialog, QTableWidgetItem, QMenu, QMessageBox
+    QApplication, QMainWindow, QFileDialog, QTableWidgetItem, QMessageBox, QMenu
 )
-from PySide6.QtCore import Qt
+
 from PySide6.QtGui import QKeyEvent
+from PySide6.QtCore import Qt, QUrl, QSettings
+from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
 
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
 from matplotlib import rcParams
+
 
 # برای اصلاح نوشته های فارسی در نمودار
 import arabic_reshaper
@@ -28,12 +33,46 @@ from video_worker import VideoWorker
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
         super().__init__(parent)
+
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
+        self.audio_output = None
+        self.media_player = None
+
+        self.setup_ui()
+        self.load_settings()
+
+        # ...
+
+        self.worker = None
+        self.is_paused = False
+
+        font_path = os.path.join(os.path.dirname(__file__), "fonts", "Vazir.ttf")
+        if os.path.exists(font_path):
+            rcParams['font.family'] = 'Vazir'
+            plt.rcParams['font.family'] = 'Vazir'
+
+    def setup_ui(self):
+        self.setWindowTitle("VidMeter")
+        self.setAcceptDrops(True)
+
+        self.ui.video_widget.setFixedSize(300, 200)
+
+        self.media_player = QMediaPlayer()
+        self.media_player.setVideoOutput(self.ui.video_widget)
+        self.audio_output = QAudioOutput()
+        self.media_player.setAudioOutput(self.audio_output)
+
+        # ...
+
         self.ui.tableFiles.installEventFilter(self)
+        self.ui.tableFiles.setSortingEnabled(True)
         self.ui.tableFiles.setContextMenuPolicy(Qt.CustomContextMenu)
         self.ui.tableFiles.customContextMenuRequested.connect(self.show_table_context_menu)
+        self.ui.tableFiles.itemClicked.connect(self.preview_video)
+        self.ui.tableFiles.itemSelectionChanged.connect(self.update_selected_duration)
+
 
         # دکمه‌ها در شروع مخفی باشند
         self.ui.progressBar.setVisible(False)
@@ -48,15 +87,6 @@ class MainWindow(QMainWindow):
         self.ui.btnPauseResume.clicked.connect(self.toggle_pause_resume)
         self.ui.btnCancelProcess.clicked.connect(self.cancel_process)
 
-        self.ui.tableFiles.itemSelectionChanged.connect(self.update_selected_duration)
-
-        self.worker = None
-        self.is_paused = False
-
-        font_path = os.path.join(os.path.dirname(__file__), "fonts", "Vazir.ttf")
-        if os.path.exists(font_path):
-            rcParams['font.family'] = 'Vazir'
-            plt.rcParams['font.family'] = 'Vazir'
 
     def eventFilter(self, source, event):
         if source == self.ui.tableFiles and isinstance(event, QKeyEvent):
@@ -67,19 +97,28 @@ class MainWindow(QMainWindow):
         return super().eventFilter(source, event)
 
     def select_path(self):
-        path = QFileDialog.getExistingDirectory(self, "Select Folder")
+        last_path = self.ui.lineEditFolder.text().strip()
+        if not os.path.exists(last_path):
+            last_path = "."
+        path = QFileDialog.getExistingDirectory(self, "Select Folder",
+                                                last_path)
         if not path:
             return
 
         self.ui.statusbar.showMessage(path)
+        self.ui.lineEditFolder.setText(path)
 
         file_list = self.get_video_files(path, check_subfolders=self.ui.chkSubfolder.isChecked())
         if file_list:
             self.start_worker(file_list)
 
     def select_files(self):
+        last_path = self.ui.lineEditFolder.text().strip()
+        if not os.path.exists(last_path):
+            last_path = "."
+
         path, _ = QFileDialog.getOpenFileNames(
-            self, "Select Video File(s)", "", "Video Files (*.mp4 *.avi *.mkv *.mov *.wmv)"
+            self, "Select Video File(s)", last_path, "Video Files (*.mp4 *.avi *.mkv *.mov *.wmv)"
         )
         if not path:
             return
@@ -170,7 +209,7 @@ class MainWindow(QMainWindow):
             self.worker.cancel()
 
     def worker_finished(self):
-        self.set_buttons_enable(True)  # TODO: ***
+        self.set_buttons_enable(True)
         # ...
         # مخفی‌سازی دکمه‌ها و نوار پیشرفت
         self.ui.progressBar.setVisible(False)
@@ -206,8 +245,18 @@ class MainWindow(QMainWindow):
         self.ui.tableFiles.setHorizontalHeaderLabels(["File Name", "Duration"])
 
         for i, (name, duration) in enumerate(results):
-            self.ui.tableFiles.setItem(i, 0, QTableWidgetItem(name))
-            self.ui.tableFiles.setItem(i, 1, QTableWidgetItem(f"{self.format_duration(duration)}"))
+            item_name = QTableWidgetItem(name)
+            item_name.setData(Qt.UserRole, name)
+            # item_name.setData(Qt.UserRole,path)   #FIXME: *
+
+            item_duration = QTableWidgetItem(f"{self.format_duration(duration)}")
+
+            if duration == 0:
+                item_name.setForeground(Qt.red)
+                item_duration.setForeground(Qt.red)
+
+            self.ui.tableFiles.setItem(i, 0, item_name)
+            self.ui.tableFiles.setItem(i, 1, item_duration)
 
         self.ui.tableFiles.resizeColumnsToContents()
 
@@ -224,6 +273,7 @@ class MainWindow(QMainWindow):
         selected_rows = set(index.row() for index in indexes)
 
         menu = QMenu()
+        # menu = QMenu(self)   #TODO: ???
 
         delete_action = menu.addAction("🗑 حذف سطر(ها)")
         copy_action = menu.addAction("📋 کپی به کلیپ‌بورد")
@@ -252,6 +302,7 @@ class MainWindow(QMainWindow):
         hours, mins = divmod(mins, 60)
         return f"{hours:02}:{mins:02}:{secs:02}"
 
+    """
     def delete_selected_rows(self):
         selected_rows = set()
         for item in self.ui.tableFiles.selectedItems():
@@ -262,6 +313,7 @@ class MainWindow(QMainWindow):
 
         # برای به‌روزرسانی وضعیت نوار وضعیت
         self.update_selected_duration()  # اگر جمع انتخاب‌شده رو نشون میدی
+    """
 
     def copy_selected_to_clipboard(self):
         selected = self.ui.tableFiles.selectedItems()
@@ -294,21 +346,6 @@ class MainWindow(QMainWindow):
                 name = self.ui.tableFiles.item(row, 0).text()
                 duration = self.ui.tableFiles.item(row, 1).text()
                 f.write(f"{name}, {duration}\n")
-
-    def show_video_details(self):
-        selected = self.ui.tableFiles.selectedItems()
-        if not selected:
-            return
-
-        row = selected[0].row()
-        filename = self.ui.tableFiles.item(row, 0).text()
-        duration = self.ui.tableFiles.item(row, 1).text()
-
-        QMessageBox.information(
-            self,
-            "جزئیات ویدیو",
-            f"🖹 نام فایل: {filename}\n⏱ مدت زمان: {duration}"
-        )
 
     def save_to_file(self):
         path, _ = QFileDialog.getSaveFileName(self, "Save File", "", "Text File (*.txt);;CSV File (*.csv)")
@@ -348,6 +385,117 @@ class MainWindow(QMainWindow):
 
         plt.tight_layout()
         plt.show()
+
+    # ..............................................................................................
+
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
+
+    def dropEvent(self, event):
+        paths = [url.toLocalFile() for url in event.mimeData().urls()]
+        self.load_files(paths)
+
+    # ..............................................................................................
+
+    def preview_video(self):
+        items = self.ui.tableFiles.selectedItems()
+        if not items:
+            return
+        row = items[0].row()
+        filename_item = self.ui.tableFiles.item(row, 0)
+        filepath = filename_item.data(Qt.UserRole)
+        # print(filepath)   #TODO: ***
+        # if filepath and os.path.exists(filepath):
+        #     self.media_player.setSource(QUrl.fromLocalFile(filepath))
+        #     self.media_player.play()
+
+        # TODO: ***
+        if filename_item and os.path.exists(filename_item.text()):
+            self.media_player.setSource(QUrl.fromLocalFile(filename_item.text()))
+            self.media_player.play()
+
+        #Test:
+        # self.media_player.setSource(QUrl.fromLocalFile("C:\\Users\\Hossein\\Desktop\\lesson_22.mp4"))
+        # self.media_player.play()
+
+    # ..............................................................................................
+
+    def delete_selected_rows(self):
+        rows = sorted(set(index.row() for index in self.ui.tableFiles.selectedIndexes()), reverse=True)
+        for row in rows:
+            self.ui.tableFiles.removeRow(row)
+
+    # ..............................................................................................
+
+    def copy_to_clipboard(self):
+        clipboard = QApplication.clipboard()
+        selected_rows = sorted(set(index.row() for index in self.ui.tableFiles.selectedIndexes()))
+        data = []
+        for row in selected_rows:
+            row_data = []
+            for col in range(self.ui.tableFiles.columnCount()):
+                item = self.ui.tableFiles.item(row, col)
+                row_data.append(item.text() if item else '')
+            data.append("\t".join(row_data))
+        clipboard.setText("\n".join(data))
+
+    # ..............................................................................................
+
+    def show_video_details(self):
+        selected = self.ui.tableFiles.selectedItems()
+        if not selected:
+            return
+        row = selected[0].row()
+        filename = self.ui.tableFiles.item(row, 0).text()
+        duration = self.ui.tableFiles.item(row, 1).text()
+        QMessageBox.information(self,
+            "جزئیات ویدیو",
+            f"🖹 نام فایل: {filename}\n⏱ مدت زمان: {duration}"
+        )
+    # ..............................................................................................
+
+    def load_settings(self):
+        settings = QSettings("VidMeter", "Settings")
+        last_folder = settings.value("last_folder", "")
+        if last_folder:
+            self.ui.lineEditFolder.setText(last_folder)
+        self.restoreGeometry(settings.value("geometry", b""))
+        self.restoreState(settings.value("window_state", b""))
+
+        include_subfolders = settings.value("subfolder", True, type=bool)
+        self.ui.chkSubfolder.setChecked(include_subfolders)
+
+    # ..............................................................................................
+
+    def save_settings(self):
+        settings = QSettings("VidMeter", "Settings")
+        settings.setValue("last_folder", self.ui.lineEditFolder.text())
+        settings.setValue("geometry", self.saveGeometry())
+        settings.setValue("window_state", self.saveState())
+        settings.setValue("subfolder", self.ui.chkSubfolder.isChecked())
+
+    # ..............................................................................................
+
+    def closeEvent(self, event):
+        self.save_settings()
+        super().closeEvent(event)
+
+    # ..............................................................................................
+
+    def load_files(self, paths):
+        file_list = []
+        for path in paths:
+            if os.path.isdir(path):
+                for root, _, files in os.walk(path):
+                    for f in files:
+                        if f.lower().endswith(('.mp4', '.avi', '.mkv', '.mov', '.wmv')):
+                            file_list.append(os.path.join(root, f))
+            elif os.path.isfile(path) and path.lower().endswith(('.mp4', '.avi', '.mkv', '.mov', '.wmv')):
+                file_list.append(path)
+
+        if file_list:
+            self.start_worker(file_list)
 
 
 # .......................................................................................

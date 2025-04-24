@@ -56,7 +56,8 @@ class VideoWorker(QThread):
                 duration = clip.duration
                 clip.close()
 
-                results.append((os.path.basename(file), duration))
+                # results.append((os.path.basename(file), duration)) #TODO: ***
+                results.append((file, duration))
             except Exception as e:
                 self.error.emit(os.path.basename(file))
                 results.append((os.path.basename(file), 0))
