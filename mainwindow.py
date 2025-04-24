@@ -5,10 +5,8 @@ import sys
 
 from ui_mainwindow import Ui_MainWindow
 
-from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
-from PySide6.QtMultimediaWidgets import QVideoWidget
 from PySide6.QtWidgets import (
-    QApplication, QMainWindow, QFileDialog, QTableWidgetItem, QMessageBox, QMenu
+    QApplication, QMainWindow, QFileDialog, QTableWidgetItem, QMessageBox, QMenu, QToolTip
 )
 
 from PySide6.QtGui import QKeyEvent
@@ -19,12 +17,13 @@ import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
 from matplotlib import rcParams
 
-
 # برای اصلاح نوشته های فارسی در نمودار
 import arabic_reshaper
 from bidi.algorithm import get_display
 
 from video_worker import VideoWorker
+
+from clickablevideowidget import ClickableVideoWidget
 
 
 # ========================================================================================
@@ -64,15 +63,30 @@ class MainWindow(QMainWindow):
         self.audio_output = QAudioOutput()
         self.media_player.setAudioOutput(self.audio_output)
 
+        self.ui.sliderSeek.setRange(0, 0)  # تا وقتی ویدیو لود بشه
+        self.ui.sliderSeek.sliderMoved.connect(self.show_slider_tooltip)
+
+        # موقع تغییر موقعیت ویدیو، اسلایدر بروزرسانی شه
+        self.media_player.positionChanged.connect(self.update_slider_position)
+
+        # وقتی طول ویدیو مشخص شد، رنج اسلایدر تنظیم بشه
+        self.media_player.durationChanged.connect(self.set_slider_range)
+
+        # وقتی کاربر اسلایدر رو تغییر بده، ویدیو seek بشه
+        self.ui.sliderSeek.sliderMoved.connect(self.seek_video)
+
+        self.ui.video_widget.clicked.connect(self.toggle_play_pause)
+        self.ui.video_widget.doubleClicked.connect(self.toggle_fullscreen)
+
         # ...
 
         self.ui.tableFiles.installEventFilter(self)
         self.ui.tableFiles.setSortingEnabled(True)
         self.ui.tableFiles.setContextMenuPolicy(Qt.CustomContextMenu)
         self.ui.tableFiles.customContextMenuRequested.connect(self.show_table_context_menu)
-        self.ui.tableFiles.itemClicked.connect(self.preview_video)
+        # self.ui.tableFiles.itemClicked.connect(self.preview_video)
+        self.ui.tableFiles.itemDoubleClicked.connect(self.preview_video)
         self.ui.tableFiles.itemSelectionChanged.connect(self.update_selected_duration)
-
 
         # دکمه‌ها در شروع مخفی باشند
         self.ui.progressBar.setVisible(False)
@@ -86,7 +100,6 @@ class MainWindow(QMainWindow):
         self.ui.btnChart.clicked.connect(self.show_chart)
         self.ui.btnPauseResume.clicked.connect(self.toggle_pause_resume)
         self.ui.btnCancelProcess.clicked.connect(self.cancel_process)
-
 
     def eventFilter(self, source, event):
         if source == self.ui.tableFiles and isinstance(event, QKeyEvent):
@@ -348,6 +361,8 @@ class MainWindow(QMainWindow):
                 f.write(f"{name}, {duration}\n")
 
     def save_to_file(self):
+        if self.ui.tableFiles.rowCount() <= 0:
+            return
         path, _ = QFileDialog.getSaveFileName(self, "Save File", "", "Text File (*.txt);;CSV File (*.csv)")
         if not path:
             return
@@ -359,6 +374,9 @@ class MainWindow(QMainWindow):
                 f.write(f"{filename}, {duration}\n")
 
     def show_chart(self):
+        if self.ui.tableFiles.rowCount() <= 0:
+            return
+
         filenames = []
         durations = []
 
@@ -398,6 +416,42 @@ class MainWindow(QMainWindow):
 
     # ..............................................................................................
 
+    def show_slider_tooltip(self, position):
+        # تبدیل میلی‌ثانیه به hh:mm:ss
+        seconds = position // 1000
+        h = seconds // 3600
+        m = (seconds % 3600) // 60
+        s = seconds % 60
+        time_str = f"{h:02}:{m:02}:{s:02}"
+
+        # نمایش tooltip در محل موس
+        from PySide6.QtGui import QCursor
+        QToolTip.showText(QCursor.pos(), time_str, self.ui.sliderSeek)
+
+    def set_slider_range(self, duration):
+        self.ui.sliderSeek.setRange(0, duration)
+
+    def update_slider_position(self, position):
+        self.ui.sliderSeek.setValue(position)
+
+    def seek_video(self, position):
+        self.media_player.setPosition(position)
+
+    # ..............................................................................................
+
+    def toggle_play_pause(self):
+        if self.media_player.playbackState() == QMediaPlayer.PlaybackState.PlayingState:
+            self.media_player.pause()
+        else:
+            self.media_player.play()
+
+    def toggle_fullscreen(self):
+        if self.ui.video_widget.isFullScreen():
+            self.ui.video_widget.setFullScreen(False)
+        else:
+            self.ui.video_widget.setFullScreen(True)
+            self.ui.video_widget.setFocus()  # گرفتن فوکوس برای دریافت key
+
     def preview_video(self):
         items = self.ui.tableFiles.selectedItems()
         if not items:
@@ -415,7 +469,7 @@ class MainWindow(QMainWindow):
             self.media_player.setSource(QUrl.fromLocalFile(filename_item.text()))
             self.media_player.play()
 
-        #Test:
+        # Test:
         # self.media_player.setSource(QUrl.fromLocalFile("C:\\Users\\Hossein\\Desktop\\lesson_22.mp4"))
         # self.media_player.play()
 
@@ -450,9 +504,10 @@ class MainWindow(QMainWindow):
         filename = self.ui.tableFiles.item(row, 0).text()
         duration = self.ui.tableFiles.item(row, 1).text()
         QMessageBox.information(self,
-            "جزئیات ویدیو",
-            f"🖹 نام فایل: {filename}\n⏱ مدت زمان: {duration}"
-        )
+                                "جزئیات ویدیو",
+                                f"🖹 نام فایل: {filename}\n⏱ مدت زمان: {duration}"
+                                )
+
     # ..............................................................................................
 
     def load_settings(self):
