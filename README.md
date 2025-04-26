@@ -26,4 +26,5 @@ activate
 cd ..
 cd ..
 pip install -r requirements.txt
+pyside6-uic mainwindow.ui -o ui_mainwindow.py
 python mainwindow.py
