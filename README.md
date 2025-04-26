@@ -20,5 +20,10 @@ This project is developed as an Open Source tool.
 ```bash
 git clone https://github.com/reza-rezvani2052/VidMeter.git
 cd VidMeter
+python -m venv .venv
+cd .venv/Scripts
+activate
+cd ..
+cd ..
 pip install -r requirements.txt
 python mainwindow.py
