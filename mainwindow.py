@@ -260,7 +260,7 @@ class MainWindow(QMainWindow):
         for i, (name, duration) in enumerate(results):
             item_name = QTableWidgetItem(name)
             item_name.setData(Qt.UserRole, name)
-            # item_name.setData(Qt.UserRole,path)   #FIXME: *
+            # item_name.setData(Qt.UserRole,path)   #TODO:
 
             item_duration = QTableWidgetItem(f"{self.format_duration(duration)}")
 
@@ -280,13 +280,14 @@ class MainWindow(QMainWindow):
 
     def show_table_context_menu(self, position):
         indexes = self.ui.tableFiles.selectedIndexes()
+
         if not indexes:
             return
 
         selected_rows = set(index.row() for index in indexes)
 
         menu = QMenu()
-        # menu = QMenu(self)   #TODO: ???
+        # menu = QMenu(self)
 
         delete_action = menu.addAction("🗑 حذف سطر(ها)")
         copy_action = menu.addAction("📋 کپی به کلیپ‌بورد")
@@ -404,7 +405,7 @@ class MainWindow(QMainWindow):
         plt.tight_layout()
         plt.show()
 
-    # ..............................................................................................
+    # ..........................................................................
 
     def dragEnterEvent(self, event):
         if event.mimeData().hasUrls():
@@ -414,7 +415,7 @@ class MainWindow(QMainWindow):
         paths = [url.toLocalFile() for url in event.mimeData().urls()]
         self.load_files(paths)
 
-    # ..............................................................................................
+    # ..........................................................................
 
     def show_slider_tooltip(self, position):
         # تبدیل میلی‌ثانیه به hh:mm:ss
@@ -437,7 +438,7 @@ class MainWindow(QMainWindow):
     def seek_video(self, position):
         self.media_player.setPosition(position)
 
-    # ..............................................................................................
+    # ..........................................................................
 
     def toggle_play_pause(self):
         if self.media_player.playbackState() == QMediaPlayer.PlaybackState.PlayingState:
@@ -452,6 +453,26 @@ class MainWindow(QMainWindow):
             self.ui.video_widget.setFullScreen(True)
             self.ui.video_widget.setFocus()  # گرفتن فوکوس برای دریافت key
 
+    def adjust_volume(self, step_percent):
+        volume = self.audio_output.volume() * 100
+        volume = max(0, min(100, volume + step_percent))
+        self.audio_output.setVolume(volume / 100.0)
+        self.statusBar().showMessage(f"🎧 Volume: {int(volume)}%")
+
+    def toggle_mute(self):
+        is_muted = self.audio_output.isMuted()
+        self.audio_output.setMuted(not is_muted)
+        msg = "🔇 Muted" if not is_muted else "🔊 Unmuted"
+        self.statusBar().showMessage(msg)
+
+    # def seek_relative(self, offset_ms):
+    #     current_pos = self.media_player.position()
+    #     new_pos = max(0, current_pos + offset_ms)
+    #     self.media_player.setPosition(new_pos)
+    def seek_relative(self, offset_ms):
+        new_pos = max(0, self.media_player.position() + offset_ms)
+        self.media_player.setPosition(new_pos)
+
     def preview_video(self):
         items = self.ui.tableFiles.selectedItems()
         if not items:
@@ -459,12 +480,12 @@ class MainWindow(QMainWindow):
         row = items[0].row()
         filename_item = self.ui.tableFiles.item(row, 0)
         filepath = filename_item.data(Qt.UserRole)
-        # print(filepath)   #TODO: ***
+        # print(filepath)   #TODO:
         # if filepath and os.path.exists(filepath):
         #     self.media_player.setSource(QUrl.fromLocalFile(filepath))
         #     self.media_player.play()
 
-        # TODO: ***
+        # TODO:
         if filename_item and os.path.exists(filename_item.text()):
             self.media_player.setSource(QUrl.fromLocalFile(filename_item.text()))
             self.media_player.play()
@@ -473,14 +494,14 @@ class MainWindow(QMainWindow):
         # self.media_player.setSource(QUrl.fromLocalFile("C:\\Users\\Hossein\\Desktop\\lesson_22.mp4"))
         # self.media_player.play()
 
-    # ..............................................................................................
+    # ..........................................................................
 
     def delete_selected_rows(self):
         rows = sorted(set(index.row() for index in self.ui.tableFiles.selectedIndexes()), reverse=True)
         for row in rows:
             self.ui.tableFiles.removeRow(row)
 
-    # ..............................................................................................
+    # ..........................................................................
 
     def copy_to_clipboard(self):
         clipboard = QApplication.clipboard()
@@ -494,7 +515,7 @@ class MainWindow(QMainWindow):
             data.append("\t".join(row_data))
         clipboard.setText("\n".join(data))
 
-    # ..............................................................................................
+    # ..........................................................................
 
     def show_video_details(self):
         selected = self.ui.tableFiles.selectedItems()
@@ -508,7 +529,7 @@ class MainWindow(QMainWindow):
                                 f"🖹 نام فایل: {filename}\n⏱ مدت زمان: {duration}"
                                 )
 
-    # ..............................................................................................
+    # ..........................................................................
 
     def load_settings(self):
         settings = QSettings("VidMeter", "Settings")
@@ -521,8 +542,6 @@ class MainWindow(QMainWindow):
         include_subfolders = settings.value("subfolder", True, type=bool)
         self.ui.chkSubfolder.setChecked(include_subfolders)
 
-    # ..............................................................................................
-
     def save_settings(self):
         settings = QSettings("VidMeter", "Settings")
         settings.setValue("last_folder", self.ui.lineEditFolder.text())
@@ -530,13 +549,7 @@ class MainWindow(QMainWindow):
         settings.setValue("window_state", self.saveState())
         settings.setValue("subfolder", self.ui.chkSubfolder.isChecked())
 
-    # ..............................................................................................
-
-    def closeEvent(self, event):
-        self.save_settings()
-        super().closeEvent(event)
-
-    # ..............................................................................................
+    # ..........................................................................
 
     def load_files(self, paths):
         file_list = []
@@ -552,8 +565,14 @@ class MainWindow(QMainWindow):
         if file_list:
             self.start_worker(file_list)
 
+    # ..........................................................................
 
-# .......................................................................................
+    def closeEvent(self, event):
+        self.save_settings()
+        super().closeEvent(event)
+
+
+# ..............................................................................
 
 
 if __name__ == "__main__":
