@@ -2,6 +2,7 @@
     "files": [
         "clickablevideowidget.py",
         "mainwindow.py",
+        "main.py",
         "mainwindow.ui",
         "video_worker.py"
     ]

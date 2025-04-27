@@ -1,7 +1,6 @@
 # mainwindow.py
 
 import os
-import sys
 
 from ui_mainwindow import Ui_MainWindow
 
@@ -22,9 +21,6 @@ import arabic_reshaper
 from bidi.algorithm import get_display
 
 from video_worker import VideoWorker
-
-from clickablevideowidget import ClickableVideoWidget
-
 
 # ========================================================================================
 
@@ -571,17 +567,3 @@ class MainWindow(QMainWindow):
         self.save_settings()
         super().closeEvent(event)
 
-
-# ..............................................................................
-
-
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-
-    # from PySide6.QtCore import Qt
-    # app.setLayoutDirection(Qt.RightToLeft)
-
-    window = MainWindow()
-    window.show()
-
-    sys.exit(app.exec())
