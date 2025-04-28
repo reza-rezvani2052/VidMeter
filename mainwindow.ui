@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>801</width>
-    <height>454</height>
+    <width>741</width>
+    <height>414</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -68,7 +68,7 @@
            </sizepolicy>
           </property>
           <property name="toolTip">
-           <string>مکث</string>
+           <string>مکث/ادامه</string>
           </property>
           <property name="text">
            <string>⏸</string>
@@ -182,6 +182,9 @@
      <layout class="QHBoxLayout" name="horizontalLayout_2">
       <item>
        <widget class="QCheckBox" name="chkSubfolder">
+        <property name="toolTip">
+         <string>جستجوی زیرپوشه‌ها</string>
+        </property>
         <property name="text">
          <string>Subfolders</string>
         </property>
@@ -226,8 +229,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>801</width>
-     <height>25</height>
+     <width>741</width>
+     <height>21</height>
     </rect>
    </property>
   </widget>
