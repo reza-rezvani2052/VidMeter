@@ -87,13 +87,20 @@ CMakeLists.txt.user*
 .idea/
 .qtcreator/
 __pycache__/
+.venv/
 
 #test files(videos)
 *.mp4
 
 *.lnk
-ui_*.py
 
+#Qt Creator :
 *.user
 *.pyproject.user
 *.pyproject.user.*
+#ui_*.py
+
+#Pyinstaller's :
+build/
+dist/
+*.spec
