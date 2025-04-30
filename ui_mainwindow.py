@@ -51,8 +51,14 @@ class Ui_MainWindow(object):
         self.horizontalLayout_3 = QHBoxLayout()
         self.horizontalLayout_3.setSpacing(0)
         self.horizontalLayout_3.setObjectName(u"horizontalLayout_3")
+        self.horizontalSpacer_3 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+
+        self.horizontalLayout_3.addItem(self.horizontalSpacer_3)
+
         self.progressBar = QProgressBar(self.centralwidget)
         self.progressBar.setObjectName(u"progressBar")
+        self.progressBar.setMaximumSize(QSize(100, 16777215))
+        self.progressBar.setMaximum(125)
         self.progressBar.setValue(0)
         self.progressBar.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
