@@ -549,12 +549,24 @@ class MainWindow(QMainWindow):
 
     def load_files(self, paths):
         file_list = []
+        check_subfolders = self.ui.chkSubfolder.isChecked()
+
         for path in paths:
+
             if os.path.isdir(path):
-                for root, _, files in os.walk(path):
-                    for f in files:
-                        if f.lower().endswith(('.mp4', '.avi', '.mkv', '.mov', '.wmv')):
-                            file_list.append(os.path.join(root, f))
+                if check_subfolders:
+                    # جستجوی بازگشتی در تمام زیرپوشه‌ها
+                    for root, _, files in os.walk(path):
+                        for f in files:
+                            if f.lower().endswith(('.mp4', '.avi', '.mkv', '.mov', '.wmv')):
+                                file_list.append(os.path.join(root, f))
+                else:
+                    # فقط فایل‌های موجود در همان پوشه
+                    for f in os.listdir(path):
+                        full_path = os.path.join(path, f)
+                        if os.path.isfile(full_path) and f.lower().endswith(('.mp4', '.avi', '.mkv', '.mov', '.wmv')):
+                            file_list.append(full_path)
+
             elif os.path.isfile(path) and path.lower().endswith(('.mp4', '.avi', '.mkv', '.mov', '.wmv')):
                 file_list.append(path)
 
