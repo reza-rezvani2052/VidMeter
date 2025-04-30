@@ -17,7 +17,7 @@ if __name__ == "__main__":
     splash.setWindowFlag(Qt.FramelessWindowHint)
     splash.show()
 
-    #  اجازه بده کمی سیستم پردازش کنه
+    #  اجازه میدیم کمی سیستم پردازش کنه
     app.processEvents()
 
     # time.sleep(3)

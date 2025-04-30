@@ -1,6 +1,8 @@
 # mainwindow.py
 
 import os
+import json
+import re
 
 from ui_mainwindow import Ui_MainWindow
 
@@ -21,6 +23,7 @@ import arabic_reshaper
 from bidi.algorithm import get_display
 
 from video_worker import VideoWorker
+
 
 # ========================================================================================
 
@@ -96,6 +99,23 @@ class MainWindow(QMainWindow):
         self.ui.btnChart.clicked.connect(self.show_chart)
         self.ui.btnPauseResume.clicked.connect(self.toggle_pause_resume)
         self.ui.btnCancelProcess.clicked.connect(self.cancel_process)
+
+        self.ui.actSaveProject.triggered.connect(self.save_project)
+        self.ui.actLoadProject.triggered.connect(self.load_project)
+        self.ui.btnProject.addAction(self.ui.actSaveProject)
+        self.ui.btnProject.addAction(self.ui.actLoadProject)
+
+        self.ui.ledSearchInTableFiles.textChanged.connect(self.filter_table_files_rows)
+        self.ui.btnClearSearch.clicked.connect(self.clear_search)
+        self.ui.comboSearchColumn.currentIndexChanged.connect(self.filter_table_files_rows)
+        self.ui.ledSearchInTableFiles.setToolTip(
+            "🔍 فیلتر نام یا مدت‌زمان\n"
+            "مثال‌ها:\n"
+            "  ویدیو           ← جستجو در نام یا زمان\n"
+            "  00:10           ← تطابق با زمان 10 ثانیه\n"
+            "  >01:00:00       ← بیشتر از 1 ساعت\n"
+            "  <=05:30         ← کمتر یا مساوی 5 دقیقه و 30 ثانیه\n"
+        )
 
     def eventFilter(self, source, event):
         if source == self.ui.tableFiles and isinstance(event, QKeyEvent):
@@ -312,18 +332,16 @@ class MainWindow(QMainWindow):
         hours, mins = divmod(mins, 60)
         return f"{hours:02}:{mins:02}:{secs:02}"
 
-    """
-    def delete_selected_rows(self):
-        selected_rows = set()
-        for item in self.ui.tableFiles.selectedItems():
-            selected_rows.add(item.row())
-
-        for row in sorted(selected_rows, reverse=True):
-            self.ui.tableFiles.removeRow(row)
-
-        # برای به‌روزرسانی وضعیت نوار وضعیت
-        self.update_selected_duration()  # اگر جمع انتخاب‌شده رو نشون میدی
-    """
+    @staticmethod
+    def duration_to_seconds(duration_str):
+        try:
+            parts = list(map(int, duration_str.split(':')))
+            while len(parts) < 3:
+                parts.insert(0, 0)  # تبدیل 05:30 به 00:05:30
+            h, m, s = parts
+            return h * 3600 + m * 60 + s
+        except Exception:
+            return -1
 
     def copy_selected_to_clipboard(self):
         selected = self.ui.tableFiles.selectedItems()
@@ -400,6 +418,135 @@ class MainWindow(QMainWindow):
 
         plt.tight_layout()
         plt.show()
+
+    def save_project(self):
+        if self.ui.tableFiles.rowCount() <= 0 :
+            return
+        
+        path, _ = QFileDialog.getSaveFileName(self, "ذخیره پروژه", "", "Project Files (*.json)")
+        if not path:
+            return
+
+        data = []
+        for row in range(self.ui.tableFiles.rowCount()):
+            name_item = self.ui.tableFiles.item(row, 0)
+            duration_item = self.ui.tableFiles.item(row, 1)
+
+            filepath = name_item.data(Qt.UserRole)
+            duration_str = duration_item.text()
+
+            # تبدیل hh:mm:ss به ثانیه
+            try:
+                h, m, s = map(int, duration_str.split(":"))
+                duration_sec = h * 3600 + m * 60 + s
+            except ValueError:
+                duration_sec = 0
+
+            data.append({
+                "filename": name_item.text(),
+                "filepath": filepath,
+                "duration": duration_sec
+            })
+
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+
+        self.statusBar().showMessage(f"✅ پروژه ذخیره شد: {path}")
+
+    def load_project(self):
+        path, _ = QFileDialog.getOpenFileName(self, "باز کردن پروژه", "", "Project Files (*.json)")
+        if not path:
+            return
+
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except Exception as e:
+            QMessageBox.critical(self, "خطا", f"خطا در خواندن فایل:\n{e}")
+            return
+
+        self.ui.tableFiles.setRowCount(0)
+
+        for entry in data:
+            row = self.ui.tableFiles.rowCount()
+            self.ui.tableFiles.insertRow(row)
+
+            item_name = QTableWidgetItem(entry["filename"])
+            item_name.setData(Qt.UserRole, entry["filepath"])
+
+            # تبدیل ثانیه به hh:mm:ss
+            total_seconds = int(entry["duration"])
+            item_duration = QTableWidgetItem(f"{self.format_duration(total_seconds)}")
+
+            if total_seconds == 0:
+                item_name.setForeground(Qt.red)
+                item_duration.setForeground(Qt.red)
+
+            self.ui.tableFiles.setItem(row, 0, item_name)
+            self.ui.tableFiles.setItem(row, 1, item_duration)
+
+        self.ui.tableFiles.resizeColumnsToContents()
+        self.statusBar().showMessage(f"📂 پروژه بارگذاری شد: {path}")
+
+    def clear_search(self):
+        self.ui.ledSearchInTableFiles.clear()
+        self.ui.comboSearchColumn.setCurrentIndex(0)
+
+    def filter_table_files_rows(self, text):
+        text = self.ui.ledSearchInTableFiles.text().strip()
+        column = self.ui.comboSearchColumn.currentText()
+
+        for row in range(self.ui.tableFiles.rowCount()):
+            name = self.ui.tableFiles.item(row, 0).text().lower()
+            duration_str = self.ui.tableFiles.item(row, 1).text().lower()
+            row_sec = self.duration_to_seconds(duration_str)
+
+            show_row = False
+
+            # بررسی فیلتر شرطی (فقط روی مدت‌زمان)
+            match = re.match(r'^(>=|<=|>|<|=)?\s*(\d+:\d+:\d+|\d+:\d+|\d+)$', text)
+            is_conditional = match is not None
+
+            if column == "All Columns":
+                if is_conditional:
+                    operator, time_str = match.groups()
+                    filter_sec = self.duration_to_seconds(time_str)
+
+                    if operator == '>' and row_sec > filter_sec:
+                        show_row = True
+                    elif operator == '>=' and row_sec >= filter_sec:
+                        show_row = True
+                    elif operator == '<' and row_sec < filter_sec:
+                        show_row = True
+                    elif operator == '<=' and row_sec <= filter_sec:
+                        show_row = True
+                    elif operator == '=' or operator is None:
+                        show_row = abs(row_sec - filter_sec) <= 1
+                else:
+                    show_row = text.lower() in name or text.lower() in duration_str
+
+            elif column == "File Name":
+                show_row = text.lower() in name
+
+            elif column == "Duration":
+                if is_conditional:
+                    operator, time_str = match.groups()
+                    filter_sec = self.duration_to_seconds(time_str)
+
+                    if operator == '>' and row_sec > filter_sec:
+                        show_row = True
+                    elif operator == '>=' and row_sec >= filter_sec:
+                        show_row = True
+                    elif operator == '<' and row_sec < filter_sec:
+                        show_row = True
+                    elif operator == '<=' and row_sec <= filter_sec:
+                        show_row = True
+                    elif operator == '=' or operator is None:
+                        show_row = abs(row_sec - filter_sec) <= 1
+                else:
+                    show_row = text.lower() in duration_str
+
+            self.ui.tableFiles.setRowHidden(row, not show_row)
 
     # ..........................................................................
 
@@ -578,4 +725,3 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event):
         self.save_settings()
         super().closeEvent(event)
-

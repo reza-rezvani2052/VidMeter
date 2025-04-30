@@ -11,15 +11,17 @@
 from PySide6.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
     QMetaObject, QObject, QPoint, QRect,
     QSize, QTime, QUrl, Qt)
-from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
-    QFont, QFontDatabase, QGradient, QIcon,
-    QImage, QKeySequence, QLinearGradient, QPainter,
-    QPalette, QPixmap, QRadialGradient, QTransform)
-from PySide6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox, QGridLayout,
-    QHBoxLayout, QHeaderView, QLineEdit, QMainWindow,
-    QMenuBar, QProgressBar, QPushButton, QSizePolicy,
-    QSlider, QSpacerItem, QStatusBar, QTableWidget,
-    QTableWidgetItem, QToolButton, QVBoxLayout, QWidget)
+from PySide6.QtGui import (QAction, QBrush, QColor, QConicalGradient,
+    QCursor, QFont, QFontDatabase, QGradient,
+    QIcon, QImage, QKeySequence, QLinearGradient,
+    QPainter, QPalette, QPixmap, QRadialGradient,
+    QTransform)
+from PySide6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox, QComboBox,
+    QGridLayout, QHBoxLayout, QHeaderView, QLineEdit,
+    QMainWindow, QMenuBar, QProgressBar, QPushButton,
+    QSizePolicy, QSlider, QSpacerItem, QStatusBar,
+    QTableWidget, QTableWidgetItem, QToolButton, QVBoxLayout,
+    QWidget)
 
 from clickablevideowidget import ClickableVideoWidget
 
@@ -27,7 +29,13 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(741, 414)
+        MainWindow.resize(849, 553)
+        self.actSaveProject = QAction(MainWindow)
+        self.actSaveProject.setObjectName(u"actSaveProject")
+        self.actSaveProject.setMenuRole(QAction.MenuRole.NoRole)
+        self.actLoadProject = QAction(MainWindow)
+        self.actLoadProject.setObjectName(u"actLoadProject")
+        self.actLoadProject.setMenuRole(QAction.MenuRole.NoRole)
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.gridLayout = QGridLayout(self.centralwidget)
@@ -43,6 +51,18 @@ class Ui_MainWindow(object):
         self.btnSelectPath.setObjectName(u"btnSelectPath")
 
         self.horizontalLayout.addWidget(self.btnSelectPath)
+
+        self.btnProject = QToolButton(self.centralwidget)
+        self.btnProject.setObjectName(u"btnProject")
+        sizePolicy = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.btnProject.sizePolicy().hasHeightForWidth())
+        self.btnProject.setSizePolicy(sizePolicy)
+        self.btnProject.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+        self.btnProject.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+
+        self.horizontalLayout.addWidget(self.btnProject)
 
         self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
@@ -66,9 +86,6 @@ class Ui_MainWindow(object):
 
         self.btnPauseResume = QToolButton(self.centralwidget)
         self.btnPauseResume.setObjectName(u"btnPauseResume")
-        sizePolicy = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.btnPauseResume.sizePolicy().hasHeightForWidth())
         self.btnPauseResume.setSizePolicy(sizePolicy)
 
@@ -85,17 +102,41 @@ class Ui_MainWindow(object):
         self.horizontalLayout.addLayout(self.horizontalLayout_3)
 
 
-        self.gridLayout.addLayout(self.horizontalLayout, 0, 0, 1, 1)
+        self.gridLayout.addLayout(self.horizontalLayout, 0, 0, 1, 2)
 
         self.lineEditFolder = QLineEdit(self.centralwidget)
         self.lineEditFolder.setObjectName(u"lineEditFolder")
         self.lineEditFolder.setEnabled(False)
         self.lineEditFolder.setReadOnly(True)
 
-        self.gridLayout.addWidget(self.lineEditFolder, 1, 0, 1, 1)
+        self.gridLayout.addWidget(self.lineEditFolder, 1, 0, 1, 2)
 
+        self.verticalLayout_2 = QVBoxLayout()
+        self.verticalLayout_2.setSpacing(2)
+        self.verticalLayout_2.setObjectName(u"verticalLayout_2")
         self.horizontalLayout_4 = QHBoxLayout()
         self.horizontalLayout_4.setObjectName(u"horizontalLayout_4")
+        self.ledSearchInTableFiles = QLineEdit(self.centralwidget)
+        self.ledSearchInTableFiles.setObjectName(u"ledSearchInTableFiles")
+
+        self.horizontalLayout_4.addWidget(self.ledSearchInTableFiles)
+
+        self.btnClearSearch = QToolButton(self.centralwidget)
+        self.btnClearSearch.setObjectName(u"btnClearSearch")
+
+        self.horizontalLayout_4.addWidget(self.btnClearSearch)
+
+        self.comboSearchColumn = QComboBox(self.centralwidget)
+        self.comboSearchColumn.addItem("")
+        self.comboSearchColumn.addItem("")
+        self.comboSearchColumn.addItem("")
+        self.comboSearchColumn.setObjectName(u"comboSearchColumn")
+
+        self.horizontalLayout_4.addWidget(self.comboSearchColumn)
+
+
+        self.verticalLayout_2.addLayout(self.horizontalLayout_4)
+
         self.tableFiles = QTableWidget(self.centralwidget)
         if (self.tableFiles.columnCount() < 2):
             self.tableFiles.setColumnCount(2)
@@ -105,12 +146,16 @@ class Ui_MainWindow(object):
         self.tableFiles.setHorizontalHeaderItem(1, __qtablewidgetitem1)
         self.tableFiles.setObjectName(u"tableFiles")
         self.tableFiles.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.tableFiles.setAlternatingRowColors(True)
         self.tableFiles.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
         self.tableFiles.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.tableFiles.horizontalHeader().setStretchLastSection(True)
         self.tableFiles.verticalHeader().setStretchLastSection(False)
 
-        self.horizontalLayout_4.addWidget(self.tableFiles)
+        self.verticalLayout_2.addWidget(self.tableFiles)
+
+
+        self.gridLayout.addLayout(self.verticalLayout_2, 2, 0, 1, 1)
 
         self.verticalLayout = QVBoxLayout()
         self.verticalLayout.setObjectName(u"verticalLayout")
@@ -136,10 +181,7 @@ class Ui_MainWindow(object):
         self.verticalLayout.addItem(self.verticalSpacer)
 
 
-        self.horizontalLayout_4.addLayout(self.verticalLayout)
-
-
-        self.gridLayout.addLayout(self.horizontalLayout_4, 2, 0, 1, 1)
+        self.gridLayout.addLayout(self.verticalLayout, 2, 1, 1, 1)
 
         self.horizontalLayout_2 = QHBoxLayout()
         self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
@@ -164,12 +206,12 @@ class Ui_MainWindow(object):
         self.horizontalLayout_2.addWidget(self.btnSaveToFile)
 
 
-        self.gridLayout.addLayout(self.horizontalLayout_2, 3, 0, 1, 1)
+        self.gridLayout.addLayout(self.horizontalLayout_2, 3, 0, 1, 2)
 
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 741, 21))
+        self.menubar.setGeometry(QRect(0, 0, 849, 25))
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QStatusBar(MainWindow)
         self.statusbar.setObjectName(u"statusbar")
@@ -182,22 +224,40 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"VidMeter", None))
+        self.actSaveProject.setText(QCoreApplication.translate("MainWindow", u"Save Project", None))
+#if QT_CONFIG(shortcut)
+        self.actSaveProject.setShortcut(QCoreApplication.translate("MainWindow", u"Ctrl+S", None))
+#endif // QT_CONFIG(shortcut)
+        self.actLoadProject.setText(QCoreApplication.translate("MainWindow", u"Load Project", None))
+#if QT_CONFIG(shortcut)
+        self.actLoadProject.setShortcut(QCoreApplication.translate("MainWindow", u"Ctrl+O", None))
+#endif // QT_CONFIG(shortcut)
         self.btnSelectFiles.setText(QCoreApplication.translate("MainWindow", u"Select File(s)", None))
         self.btnSelectPath.setText(QCoreApplication.translate("MainWindow", u"Select Path", None))
+        self.btnProject.setText(QCoreApplication.translate("MainWindow", u"Project", None))
 #if QT_CONFIG(tooltip)
-        self.btnPauseResume.setToolTip(QCoreApplication.translate("MainWindow", u"\u0645\u06a9\u062b/\u0627\u062f\u0627\u0645\u0647", None))
+        self.btnPauseResume.setToolTip(QCoreApplication.translate("MainWindow", u"Pause/Resume", None))
 #endif // QT_CONFIG(tooltip)
         self.btnPauseResume.setText(QCoreApplication.translate("MainWindow", u"\u23f8", None))
 #if QT_CONFIG(tooltip)
-        self.btnCancelProcess.setToolTip(QCoreApplication.translate("MainWindow", u"\u0644\u063a\u0648", None))
+        self.btnCancelProcess.setToolTip(QCoreApplication.translate("MainWindow", u"Cancel", None))
 #endif // QT_CONFIG(tooltip)
         self.btnCancelProcess.setText(QCoreApplication.translate("MainWindow", u"\u274c", None))
+        self.ledSearchInTableFiles.setPlaceholderText(QCoreApplication.translate("MainWindow", u"Search in name or duration", None))
+#if QT_CONFIG(tooltip)
+        self.btnClearSearch.setToolTip(QCoreApplication.translate("MainWindow", u"\u274c Clear Search", None))
+#endif // QT_CONFIG(tooltip)
+        self.btnClearSearch.setText(QCoreApplication.translate("MainWindow", u"\u274c", None))
+        self.comboSearchColumn.setItemText(0, QCoreApplication.translate("MainWindow", u"All Columns", None))
+        self.comboSearchColumn.setItemText(1, QCoreApplication.translate("MainWindow", u"File Name", None))
+        self.comboSearchColumn.setItemText(2, QCoreApplication.translate("MainWindow", u"Duration", None))
+
         ___qtablewidgetitem = self.tableFiles.horizontalHeaderItem(0)
         ___qtablewidgetitem.setText(QCoreApplication.translate("MainWindow", u"Filename", None));
         ___qtablewidgetitem1 = self.tableFiles.horizontalHeaderItem(1)
         ___qtablewidgetitem1.setText(QCoreApplication.translate("MainWindow", u"Duration", None));
 #if QT_CONFIG(tooltip)
-        self.chkSubfolder.setToolTip(QCoreApplication.translate("MainWindow", u"\u062c\u0633\u062a\u062c\u0648\u06cc \u0632\u06cc\u0631\u067e\u0648\u0634\u0647\u200c\u0647\u0627", None))
+        self.chkSubfolder.setToolTip(QCoreApplication.translate("MainWindow", u"Include Subfolders", None))
 #endif // QT_CONFIG(tooltip)
         self.chkSubfolder.setText(QCoreApplication.translate("MainWindow", u"Subfolders", None))
         self.btnChart.setText(QCoreApplication.translate("MainWindow", u"Chart", None))
