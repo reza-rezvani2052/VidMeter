@@ -1,5 +1,6 @@
 {
     "files": [
+		"build.py",
         "clickablevideowidget.py",
         "mainwindow.py",
         "main.py",

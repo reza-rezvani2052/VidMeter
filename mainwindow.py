@@ -14,9 +14,21 @@ from PySide6.QtGui import QKeyEvent
 from PySide6.QtCore import Qt, QUrl, QSettings
 from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
 
+# ...
+
+# os.environ["QT_API"] = "pyside6"  # تنظیم متغیر محیطی
+import matplotlib
+
+matplotlib.use("QtAgg")  # انتخاب backend مناسب
+# from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
+# from matplotlib.figure import Figure
+
 import matplotlib.pyplot as plt
+# matplotlib.rcParams["backend.qt6"] = "PySide6"  # تنظیم wrapper به PySide6
 import matplotlib.font_manager as fm
 from matplotlib import rcParams
+
+# ...
 
 # برای اصلاح نوشته های فارسی در نمودار
 import arabic_reshaper
@@ -160,8 +172,7 @@ class MainWindow(QMainWindow):
         self.ui.btnSelectPath.setEnabled(is_enable)
         self.ui.btnChart.setEnabled(is_enable)
         self.ui.btnSaveToFile.setEnabled(is_enable)
-        # self.ui.btnPauseResume.setEnabled(not is_enable)
-        # self.ui.btnCancelProcess.setEnabled(not is_enable)
+        self.ui.btnProject.setEnabled(is_enable)
 
     @staticmethod
     def get_video_files(path, check_subfolders=False, ignore_errors=True):
@@ -377,6 +388,8 @@ class MainWindow(QMainWindow):
 
     def save_to_file(self):
         if self.ui.tableFiles.rowCount() <= 0:
+            QApplication.beep()
+            self.ui.statusbar.showMessage("جدول خالی است", 3000)
             return
         path, _ = QFileDialog.getSaveFileName(self, "Save File", "", "Text File (*.txt);;CSV File (*.csv)")
         if not path:
@@ -390,6 +403,8 @@ class MainWindow(QMainWindow):
 
     def show_chart(self):
         if self.ui.tableFiles.rowCount() <= 0:
+            QApplication.beep()
+            self.ui.statusbar.showMessage("جدول خالی است", 3000)
             return
 
         filenames = []
@@ -420,9 +435,11 @@ class MainWindow(QMainWindow):
         plt.show()
 
     def save_project(self):
-        if self.ui.tableFiles.rowCount() <= 0 :
+        if self.ui.tableFiles.rowCount() <= 0:
+            QApplication.beep()
+            self.ui.statusbar.showMessage("جدول خالی است", 3000)
             return
-        
+
         path, _ = QFileDialog.getSaveFileName(self, "ذخیره پروژه", "", "Project Files (*.json)")
         if not path:
             return
