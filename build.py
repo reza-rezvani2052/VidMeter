@@ -5,10 +5,10 @@ from pathlib import Path
 # تنظیم مسیر فایل‌ها
 BASE_DIR = Path(__file__).resolve().parent
 MAIN_SCRIPT = BASE_DIR / "main.py"
-ICON_PATH = BASE_DIR / "rc" / "app-icon.ico"
+ICON_PATH = BASE_DIR / "RC" / "app-icon.ico"
 # ...
-SPLASH_PATH = BASE_DIR / "rc" / "splash.png"
-FONTS_DIR = BASE_DIR / "rc" / "fonts"
+# SPLASH_PATH = BASE_DIR / "RC" / "splash.jpg"
+# FONTS_DIR = BASE_DIR / "RC" / "fonts"
 
 # نام اجرایی (پوشه خروجی هم همین خواهد بود در حالت --onedir)
 APP_NAME = "VidMeter"
@@ -72,18 +72,18 @@ print("_" * 110)
 if result.returncode == 0:
     print("✅ The executable file was successfully built.")
     # ...
-    output_dir = BASE_DIR / "dist" / APP_NAME
+    # output_dir = BASE_DIR / "dist" / APP_NAME
 
     # کپی splash.png
-    if SPLASH_PATH.exists():
-        shutil.copy(SPLASH_PATH, output_dir / "_internal" / SPLASH_PATH.name)
-        print(f"📄 Copied splash.png to {output_dir}")
+    # if SPLASH_PATH.exists():
+    #     shutil.copy(SPLASH_PATH, output_dir / "_internal" / SPLASH_PATH.name)
+    #     print(f"📄 Copied splash.jpg to {output_dir}")
 
     # کپی پوشه fonts
-    if FONTS_DIR.exists():
-        dest_fonts = output_dir / "_internal" / "fonts"
-        shutil.copytree(FONTS_DIR, dest_fonts, dirs_exist_ok=True)
-        print(f"📁 Copied fonts directory to {dest_fonts}")
+    # if FONTS_DIR.exists():
+    #     dest_fonts = output_dir / "_internal" / "fonts"
+    #     shutil.copytree(FONTS_DIR, dest_fonts, dirs_exist_ok=True)
+    #     print(f"📁 Copied fonts directory to {dest_fonts}")
 
 else:
     print("❌ Error occurred while building the executable file.")

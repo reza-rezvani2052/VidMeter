@@ -1,39 +1,14 @@
-# mainwindow.py
-
-import os
 import json
+import os
 import re
+import tempfile
+
+from PySide6.QtCore import QFile, QSettings, Qt, QUrl
+from PySide6.QtGui import QKeyEvent
+from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer
+from PySide6.QtWidgets import (QApplication, QFileDialog, QMainWindow, QMenu, QMessageBox, QTableWidgetItem, QToolTip)
 
 from ui_mainwindow import Ui_MainWindow
-
-from PySide6.QtWidgets import (
-    QApplication, QMainWindow, QFileDialog, QTableWidgetItem, QMessageBox, QMenu, QToolTip
-)
-
-from PySide6.QtGui import QKeyEvent
-from PySide6.QtCore import Qt, QUrl, QSettings
-from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
-
-# ...
-
-# os.environ["QT_API"] = "pyside6"  # تنظیم متغیر محیطی
-import matplotlib
-
-matplotlib.use("QtAgg")  # انتخاب backend مناسب
-# from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
-# from matplotlib.figure import Figure
-
-import matplotlib.pyplot as plt
-# matplotlib.rcParams["backend.qt6"] = "PySide6"  # تنظیم wrapper به PySide6
-import matplotlib.font_manager as fm
-from matplotlib import rcParams
-
-# ...
-
-# برای اصلاح نوشته های فارسی در نمودار
-import arabic_reshaper
-from bidi.algorithm import get_display
-
 from video_worker import VideoWorker
 
 
@@ -46,25 +21,20 @@ class MainWindow(QMainWindow):
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-
+        # ...
         self.audio_output = None
         self.media_player = None
-
+        # ...
         self.setup_ui()
         self.load_settings()
-
         # ...
-
         self.worker = None
         self.is_paused = False
-
-        font_path = os.path.join(os.path.dirname(__file__), "fonts", "Vazir.ttf")
-        if os.path.exists(font_path):
-            rcParams['font.family'] = 'Vazir'
-            plt.rcParams['font.family'] = 'Vazir'
+        # ...
+        self.font_prop = None
+        # self._load_custom_font()    # lazy load on :  show_chart()
 
     def setup_ui(self):
-        self.setWindowTitle("VidMeter")
         self.setAcceptDrops(True)
 
         self.ui.video_widget.setFixedSize(300, 200)
@@ -121,13 +91,61 @@ class MainWindow(QMainWindow):
         self.ui.btnClearSearch.clicked.connect(self.clear_search)
         self.ui.comboSearchColumn.currentIndexChanged.connect(self.filter_table_files_rows)
         self.ui.ledSearchInTableFiles.setToolTip(
-            "🔍 فیلتر نام یا مدت‌زمان\n"
-            "مثال‌ها:\n"
-            "  ویدیو           ← جستجو در نام یا زمان\n"
-            "  00:10           ← تطابق با زمان 10 ثانیه\n"
-            "  >01:00:00       ← بیشتر از 1 ساعت\n"
-            "  <=05:30         ← کمتر یا مساوی 5 دقیقه و 30 ثانیه\n"
-        )
+                "🔍 فیلتر نام یا مدت‌زمان\n"
+                "مثال‌ها:\n"
+                "  ویدیو           ← جستجو در نام یا زمان\n"
+                "  00:10           ← تطابق با زمان 10 ثانیه\n"
+                "  >01:00:00       ← بیشتر از 1 ساعت\n"
+                "  <=05:30         ← کمتر یا مساوی 5 دقیقه و 30 ثانیه\n"
+                )
+
+    def _load_custom_font(self):
+        """
+        بارگذاری فونت فارسی سفارشی (مثل Vazir) از فایل‌های منابع Qt (.qrc) و تنظیم آن به‌عنوان فونت پیش‌فرض برای نمودارهای matplotlib.
+
+        این تابع مراحل زیر را انجام می‌دهد:
+        1. مسیر فونت را از Qt Resource (مثلاً ":/fonts/Vazir.ttf") مشخص می‌کند.
+        2. با استفاده از matplotlib.font_manager فونت را بارگذاری می‌کند.
+        3. فونت را به لیست فونت‌های matplotlib اضافه می‌کند.
+        4. فونت را به‌عنوان فونت پیش‌فرض تنظیم می‌کند تا برچسب‌های فارسی نمودار به درستی نمایش داده شوند.
+
+        نکته:
+            این تابع باید فقط زمانی فراخوانی شود که نمودار قرار است نمایش داده شود
+            تا از بارگذاری زودهنگام و کند شدن startup جلوگیری شود (lazy load).
+
+        Raises:
+            FileNotFoundError: اگر فونت از منابع Qt پیدا نشود (احتمالاً مشکلی در qrc یا import وجود دارد).
+        """
+        try:
+            qfile = QFile(":/fonts/Vazir.ttf")
+            if not qfile.open(QFile.ReadOnly):
+                raise FileNotFoundError("Vazir font not found in resource")
+
+            tmp_font_file = tempfile.NamedTemporaryFile(delete=False, suffix=".ttf")
+            tmp_font_file.write(qfile.readAll().data())
+            tmp_font_file.close()
+
+            # ...
+
+            # os.environ["QT_API"] = "pyside6"  # تنظیم متغیر محیطی
+            import matplotlib
+
+            matplotlib.use("QtAgg")  # انتخاب backend مناسب
+            # from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
+            # from matplotlib.figure import Figure
+
+            import matplotlib.pyplot as plt
+            # matplotlib.rcParams["backend.qt6"] = "PySide6"  # تنظیم wrapper به PySide6
+            import matplotlib.font_manager as fm
+            from matplotlib import rcParams
+
+            # ...
+            rcParams['font.family'] = 'Vazir'
+            plt.rcParams['font.family'] = 'Vazir'
+            self.font_prop = fm.FontProperties(fname=tmp_font_file.name)
+        except Exception as e:
+            print("⛔️ Font loading failed:", e)
+            self.font_prop = None
 
     def eventFilter(self, source, event):
         if source == self.ui.tableFiles and isinstance(event, QKeyEvent):
@@ -141,8 +159,10 @@ class MainWindow(QMainWindow):
         last_path = self.ui.lineEditFolder.text().strip()
         if not os.path.exists(last_path):
             last_path = "."
-        path = QFileDialog.getExistingDirectory(self, "Select Folder",
-                                                last_path)
+        path = QFileDialog.getExistingDirectory(
+                self, "Select Folder",
+                last_path
+                )
         if not path:
             return
 
@@ -159,8 +179,8 @@ class MainWindow(QMainWindow):
             last_path = "."
 
         path, _ = QFileDialog.getOpenFileNames(
-            self, "Select Video File(s)", last_path, "Video Files (*.mp4 *.avi *.mkv *.mov *.wmv)"
-        )
+                self, "Select Video File(s)", last_path, "Video Files (*.mp4 *.avi *.mkv *.mov *.wmv)"
+                )
         if not path:
             return
         else:
@@ -407,6 +427,21 @@ class MainWindow(QMainWindow):
             self.ui.statusbar.showMessage("جدول خالی است", 3000)
             return
 
+        # ..................
+
+        # ✅ lazy import
+
+        # این ایمپورت در تابع بارگذاری فونت هم دوباره ایمپورت میشه
+        # چون اینجا به آن نیاز بود، دوباره ایمپورت کردم
+        import matplotlib.pyplot as plt
+        self._load_custom_font()  # ← فقط وقتی نیاز داریم فونت رو لود کن
+
+        # برای اصلاح نوشته های فارسی در نمودار
+        import arabic_reshaper
+        from bidi.algorithm import get_display
+
+        # ..................
+
         filenames = []
         durations = []
 
@@ -416,21 +451,25 @@ class MainWindow(QMainWindow):
             total_seconds = h * 3600 + m * 60 + s
             durations.append(total_seconds)
 
-        font_path = os.path.join(os.path.dirname(__file__), "fonts", "Vazir.ttf")
-        font_prop = fm.FontProperties(fname=font_path)
+        # ___
 
         reshaped_labels = [get_display(arabic_reshaper.reshape(label)) for label in filenames]
 
-        fig, ax = plt.subplots(figsize=(10, 5))
+        # fig, ax = plt.subplots(figsize=(10, 5))
+        fig, ax = plt.subplots(figsize=(12, 6))  # افزایش عرض نمودار
+        # fig, ax = plt.subplots(figsize=(8, 4))  # افزایش عرض نمودار
+
         ax.barh(reshaped_labels, durations, color='skyblue')
-        ax.set_xlabel("مدت زمان (ثانیه)", fontproperties=font_prop)
-        ax.set_title("مدت زمان فایل‌های ویدیویی", fontproperties=font_prop)
+        ax.set_xlabel("مدت زمان (ثانیه)", fontproperties=self.font_prop)
+        ax.set_title("مدت زمان فایل‌های ویدیویی", fontproperties=self.font_prop)
 
         for label in ax.get_xticklabels():
-            label.set_fontproperties(font_prop)
+            label.set_fontproperties(self.font_prop)
         for label in ax.get_yticklabels():
-            label.set_fontproperties(font_prop)
+            label.set_fontproperties(self.font_prop)
 
+        # plt.subplots_adjust(left=0.3)  # فضای بیشتر برای برچسب‌های فارسی
+        plt.subplots_adjust(left=0.3, right=0.95, top=0.9, bottom=0.1)
         plt.tight_layout()
         plt.show()
 
@@ -459,11 +498,13 @@ class MainWindow(QMainWindow):
             except ValueError:
                 duration_sec = 0
 
-            data.append({
-                "filename": name_item.text(),
-                "filepath": filepath,
-                "duration": duration_sec
-            })
+            data.append(
+                    {
+                        "filename": name_item.text(),
+                        "filepath": filepath,
+                        "duration": duration_sec
+                        }
+                    )
 
         with open(path, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
@@ -684,10 +725,11 @@ class MainWindow(QMainWindow):
         row = selected[0].row()
         filename = self.ui.tableFiles.item(row, 0).text()
         duration = self.ui.tableFiles.item(row, 1).text()
-        QMessageBox.information(self,
-                                "جزئیات ویدیو",
-                                f"🖹 نام فایل: {filename}\n⏱ مدت زمان: {duration}"
-                                )
+        QMessageBox.information(
+                self,
+                "جزئیات ویدیو",
+                f"🖹 نام فایل: {filename}\n⏱ مدت زمان: {duration}"
+                )
 
     # ..........................................................................
 

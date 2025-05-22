@@ -1,10 +1,12 @@
 {
     "files": [
-		"build.py",
+        "build.py",
         "clickablevideowidget.py",
         "mainwindow.py",
         "main.py",
         "mainwindow.ui",
-        "video_worker.py"
+        "video_worker.py",
+        "build_ui.py",
+        "RC/resources.qrc"
     ]
 }

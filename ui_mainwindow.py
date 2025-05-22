@@ -24,6 +24,7 @@ from PySide6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox, QComb
     QWidget)
 
 from clickablevideowidget import ClickableVideoWidget
+import resources_rc
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -202,6 +203,9 @@ class Ui_MainWindow(object):
 
         self.btnSaveToFile = QPushButton(self.centralwidget)
         self.btnSaveToFile.setObjectName(u"btnSaveToFile")
+        icon = QIcon()
+        icon.addFile(u":/img/save.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        self.btnSaveToFile.setIcon(icon)
 
         self.horizontalLayout_2.addWidget(self.btnSaveToFile)
 

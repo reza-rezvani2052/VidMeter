@@ -5,6 +5,21 @@ from PySide6.QtWidgets import QApplication, QSplashScreen
 from PySide6.QtGui import QPixmap
 from PySide6.QtCore import Qt
 
+# ----------------------------------------------------------------------------
+
+def build_ui_and_convert_qrc_to_py():
+    from build_ui import convert_qrc_to_py, convert_all_ui_files
+
+    convert_qrc_to_py()
+    convert_all_ui_files()
+
+
+# TODO: در رلیز نهایی برنامه، بعد از ساخت فایل مربوطه، خط زیر غیر فعال شود
+build_ui_and_convert_qrc_to_py()
+import resources_rc
+
+# ----------------------------------------------------------------------------
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
 
@@ -13,14 +28,7 @@ if __name__ == "__main__":
 
     # ...
 
-    splash_image_path = os.path.join(os.path.dirname(__file__) + "/rc", 'splash.png')
-    print(f"splash_image_path = {splash_image_path}")  #TODO: در انتشار نهایی این را حذف کنم
-    if os.path.exists(splash_image_path):
-        splash_pix = QPixmap(splash_image_path)
-    else:
-        splash_pix = QPixmap("./_internal/splash.png")
-
-    splash = QSplashScreen(splash_pix, Qt.WindowStaysOnTopHint)
+    splash = QSplashScreen(QPixmap(":/splash.jpg"), Qt.WindowStaysOnTopHint)
     splash.setWindowFlag(Qt.FramelessWindowHint)
     splash.show()
 

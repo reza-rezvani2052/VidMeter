@@ -305,6 +305,10 @@
         <property name="text">
          <string>Save</string>
         </property>
+        <property name="icon">
+         <iconset resource="RC/resources.qrc">
+          <normaloff>:/img/save.png</normaloff>:/img/save.png</iconset>
+        </property>
        </widget>
       </item>
      </layout>
@@ -353,6 +357,8 @@
    <container>1</container>
   </customwidget>
  </customwidgets>
- <resources/>
+ <resources>
+  <include location="RC/resources.qrc"/>
+ </resources>
  <connections/>
 </ui>

@@ -1,0 +1,25 @@
+<RCC>
+    <qresource prefix="/">
+        <file>fonts/iran_sans.ttf</file>
+        <file>fonts/Vazir.ttf</file>
+        <file>help/index.html</file>
+        <file>img/about.png</file>
+        <file>img/close.png</file>
+        <file>img/feedback.png</file>
+        <file>img/help.png</file>
+        <file>img/options.png</file>
+        <file>img/save.png</file>
+        <file>splash.jpg</file>
+        <file>app-icon.jpg</file>
+        <file>img/back.png</file>
+        <file>img/cancel.png</file>
+        <file>img/close-button.png</file>
+        <file>img/print.png</file>
+        <file>img/remove.png</file>
+        <file>img/remove2.png</file>
+        <file>img/reset-settings.png</file>
+        <file>img/restart-app.png</file>
+        <file>img/search.png</file>
+        <file>img/select-all.png</file>
+    </qresource>
+</RCC>
