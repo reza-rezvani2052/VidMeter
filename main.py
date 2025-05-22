@@ -1,9 +1,8 @@
-import os
 import sys
-# import time
 from PySide6.QtWidgets import QApplication, QSplashScreen
 from PySide6.QtGui import QPixmap
 from PySide6.QtCore import Qt
+
 
 # ----------------------------------------------------------------------------
 
@@ -16,7 +15,7 @@ def build_ui_and_convert_qrc_to_py():
 
 # TODO: در رلیز نهایی برنامه، بعد از ساخت فایل مربوطه، خط زیر غیر فعال شود
 build_ui_and_convert_qrc_to_py()
-import resources_rc
+import resources_rc  # پای چارم به اشتباه این را گاستفاده نشدهگ در نظر میگیره
 
 # ----------------------------------------------------------------------------
 

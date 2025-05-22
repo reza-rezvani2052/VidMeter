@@ -18,7 +18,7 @@ def convert_qrc_to_py():
     qrc_path = os.path.join("RC", "resources.qrc")
     # output_path = os.path.join("UI", "rc_resources.py")
 
-    #TODO: برخی مواقع اسم فایل به دلیل زیر عوض میشه :
+    # TODO: برخی مواقع اسم فایل به دلیل زیر عوض میشه :
     # اگر هنگام تبدیل فایل resource به فایل پایتون از کیوت کریتوراستفاده کنیم
     # بهتر است از کیوت کریتور برای ساخت این فایل استفاه نکنم و فقط طراحی را در آن انجام بدم
     # output_path = "rc_resources.py"

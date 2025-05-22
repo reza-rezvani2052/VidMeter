@@ -31,6 +31,9 @@ class Ui_MainWindow(object):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
         MainWindow.resize(849, 553)
+        icon = QIcon()
+        icon.addFile(u":/app-icon.jpg", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        MainWindow.setWindowIcon(icon)
         self.actSaveProject = QAction(MainWindow)
         self.actSaveProject.setObjectName(u"actSaveProject")
         self.actSaveProject.setMenuRole(QAction.MenuRole.NoRole)
@@ -203,9 +206,9 @@ class Ui_MainWindow(object):
 
         self.btnSaveToFile = QPushButton(self.centralwidget)
         self.btnSaveToFile.setObjectName(u"btnSaveToFile")
-        icon = QIcon()
-        icon.addFile(u":/img/save.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
-        self.btnSaveToFile.setIcon(icon)
+        icon1 = QIcon()
+        icon1.addFile(u":/img/save.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        self.btnSaveToFile.setIcon(icon1)
 
         self.horizontalLayout_2.addWidget(self.btnSaveToFile)
 

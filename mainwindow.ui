@@ -13,6 +13,10 @@
   <property name="windowTitle">
    <string>VidMeter</string>
   </property>
+  <property name="windowIcon">
+   <iconset resource="RC/resources.qrc">
+    <normaloff>:/app-icon.jpg</normaloff>:/app-icon.jpg</iconset>
+  </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
     <item row="0" column="0" colspan="2">

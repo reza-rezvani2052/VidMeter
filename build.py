@@ -43,7 +43,7 @@ excluded_modules = [
     # "cryptography", "hazmat",  # _rust.pyd
     # "fontTools",  # fonttools-4.57.0
 
-]
+    ]
 
 # ساخت دستور pyinstaller
 cmd = [
@@ -53,7 +53,7 @@ cmd = [
     "--onedir",
     f"--icon={ICON_PATH}",
     f"--name={APP_NAME}",
-]
+    ]
 
 # اضافه کردن exclude-module به دستور
 for module in excluded_modules:

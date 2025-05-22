@@ -5,6 +5,8 @@ from PySide6.QtCore import QThread, Signal, QMutex, QWaitCondition
 
 # import ffmpeg
 from moviepy import VideoFileClip
+
+
 # from moviepy.editor import VideoFileClip          # ERROR
 
 
@@ -13,7 +15,6 @@ class VideoWorker(QThread):
     result = Signal(list)
     finished = Signal()  # پایان کامل کار
     error = Signal(str)
-
 
     def __init__(self, files):
         super().__init__()
@@ -35,6 +36,7 @@ class VideoWorker(QThread):
             print(f"ffprobe error for {path}: {e}")
             return 0
     """
+
     # ...
 
     def run(self):
