@@ -49,7 +49,7 @@ excluded_modules = [
 cmd = [
     "pyinstaller",
     "--noconfirm",
-    # "--windowed",             #TODO: در انتشار نهایی این را تغییر بدهم
+    "--windowed",             #TODO: در انتشار نهایی این را تغییر بدهم
     "--onedir",
     f"--icon={ICON_PATH}",
     f"--name={APP_NAME}",
